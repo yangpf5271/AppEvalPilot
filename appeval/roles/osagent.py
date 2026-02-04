@@ -125,7 +125,7 @@ class OSAgent(Role):
         """Initialize OSAgent.
 
         Args:
-            platform (str): Operating system type (Windows, Mac, or Android).
+            platform (str): Operating system type (Windows, Linux, Mac, or Android).
             max_iters (int): Maximum number of iterations.
             use_ocr (bool): Whether to use OCR.
             quad_split_ocr (bool): Whether to split image into four parts for OCR recognition.
@@ -167,7 +167,7 @@ class OSAgent(Role):
 
     def _get_default_add_info(self) -> str:
         """Get default additional prompt information"""
-        if self.platform == "Windows":
+        if self.platform == "Windows" or self.platform == "Linux":
             return (
                 "If you need to interact with elements outside of a web popup, such as calendar or time selection "
                 "popups, make sure to close the popup first. If the content in a text box is entered incorrectly, "
@@ -238,6 +238,15 @@ class OSAgent(Role):
                     "search_keys": ["win", "s"],
                     "ctrl_key": "ctrl",
                     "pc_type": "Windows",
+                },
+                "prompt_class": PC_prompt,
+            },
+            "Linux": {
+                "controller_args": {
+                    "platform": "Linux",
+                    "search_keys": ["win", "s"],
+                    "ctrl_key": "ctrl",
+                    "pc_type": "Linux",
                 },
                 "prompt_class": PC_prompt,
             },
@@ -482,7 +491,7 @@ class OSAgent(Role):
                     perception_infos[i]["coordinates"] = [int((x1 + x2) / 2), int((y1 + y2) / 2)]
 
         # If extend_xml_infos is enabled, then get XML information
-        if self.extend_xml_infos and self.platform in ["Android", "Windows"]:
+        if self.extend_xml_infos and self.platform in ["Android", "Windows", "Linux"]:
             xml_results = self.controller.get_screen_xml(self.location_info)
             logger.debug(xml_results)
             perception_infos.extend(xml_results)
@@ -704,9 +713,9 @@ class OSAgent(Role):
             else:
                 time.sleep(10)
 
-        elif self.platform == "Windows":
+        elif self.platform in ["Windows", "Linux"]:
             app_name = self.rc.action.split("(")[-1].split(")")[0]
-            logger.debug(f"Opening Windows app: {app_name}")
+            logger.debug(f"Opening {self.platform} app: {app_name}")
             self.controller.open_app(app_name)
             time.sleep(10)
         else:
@@ -730,10 +739,10 @@ class OSAgent(Role):
         else:
             # Execute other actions
             try:
-                if self.platform in ["Android", "Windows"]:
+                if self.platform in ["Android", "Windows", "Linux"]:
                     self.controller.run_action(self.rc.action)
                 else:
-                    logger.error("Currently only supports Android and Windows")
+                    logger.error("Currently only supports Android, Windows and Linux")
             except Exception as e:
                 # For direct exit when using tell in automg
                 if isinstance(e, SystemExit) and e.code == 0:
